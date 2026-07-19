@@ -2,6 +2,7 @@ package music
 
 import (
 	"sync"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/kong/botdiscord/internal/queue"
@@ -25,6 +26,8 @@ type Player struct {
 	paused        bool
 	volume        float64
 	skipRequested bool
+	idleTimer     *time.Timer
+	onIdleTimeout func(guildID string)
 }
 
 func NewPlayer() *Player {
@@ -34,10 +37,39 @@ func NewPlayer() *Player {
 	}
 }
 
+func (p *Player) SetOnIdleTimeout(fn func(guildID string)) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.onIdleTimeout = fn
+}
+
+func (p *Player) stopIdleTimerLocked() {
+	if p.idleTimer != nil {
+		p.idleTimer.Stop()
+		p.idleTimer = nil
+	}
+}
+
+func (p *Player) startIdleTimerLocked() {
+	p.stopIdleTimerLocked()
+	if p.vc == nil || p.vc.Status == discordgo.VoiceConnectionStatusDead || p.onIdleTimeout == nil {
+		return
+	}
+	guildID := p.vc.GuildID
+	p.idleTimer = time.AfterFunc(10*time.Minute, func() {
+		p.mu.Lock()
+		if p.session == nil && p.q.Size() == 0 && p.vc != nil && p.vc.Status != discordgo.VoiceConnectionStatusDead {
+			p.onIdleTimeout(guildID)
+		}
+		p.mu.Unlock()
+	})
+}
+
 func (p *Player) Play(song *queue.Song, vc *discordgo.VoiceConnection) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
+	p.stopIdleTimerLocked()
 	if p.session != nil {
 		p.session.Stop()
 		p.session = nil
@@ -69,6 +101,7 @@ func (p *Player) Stop() {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
+	p.stopIdleTimerLocked()
 	p.skipRequested = true
 	if p.session != nil {
 		p.session.Stop()
@@ -219,6 +252,7 @@ func (p *Player) onSongEnd() {
 	next := p.q.Next()
 	if next == nil {
 		p.current = nil
+		p.startIdleTimerLocked()
 		return
 	}
 	p.current = next

@@ -32,6 +32,11 @@ func New(cfg *config.Config) (*Bot, error) {
 		log.Printf("Warning: search cache not available: %v", err)
 	}
 
+	b.player.SetOnIdleTimeout(func(guildID string) {
+		log.Printf("Idle timeout: disconnecting from guild %s", guildID)
+		s.ChannelVoiceJoin(context.Background(), guildID, "", false, false)
+	})
+
 	s.AddHandler(b.onReady)
 	s.AddHandler(b.onGuildCreate)
 	s.AddHandler(b.onInteractionCreate)
