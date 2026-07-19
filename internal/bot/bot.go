@@ -28,6 +28,10 @@ func New(cfg *config.Config) (*Bot, error) {
 		player:  music.NewPlayer(),
 	}
 
+	if err := music.InitSearchCache("search_cache.db"); err != nil {
+		log.Printf("Warning: search cache not available: %v", err)
+	}
+
 	s.AddHandler(b.onReady)
 	s.AddHandler(b.onGuildCreate)
 	s.AddHandler(b.onInteractionCreate)

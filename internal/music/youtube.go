@@ -13,6 +13,13 @@ type VideoResult struct {
 }
 
 func Search(query string, limit int) ([]VideoResult, error) {
+	normalized := strings.ToLower(strings.TrimSpace(query))
+	if c := getSearchCache(); c != nil {
+		if results, ok := c.Lookup(normalized); ok {
+			return results, nil
+		}
+	}
+
 	args := []string{
 		"--default-search", "ytsearch",
 		"--no-playlist",
@@ -38,6 +45,10 @@ func Search(query string, limit int) ([]VideoResult, error) {
 			URL:      fmt.Sprintf("https://www.youtube.com/watch?v=%s", parts[1]),
 			Duration: parts[2],
 		})
+	}
+
+	if c := getSearchCache(); c != nil {
+		c.Store(normalized, results)
 	}
 	return results, nil
 }

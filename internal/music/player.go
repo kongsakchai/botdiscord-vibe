@@ -193,6 +193,13 @@ func (p *Player) onSongEnd() {
 
 	p.session = nil
 
+	if p.vc == nil || p.vc.Status == discordgo.VoiceConnectionStatusDead {
+		p.q.Clear()
+		p.current = nil
+		p.vc = nil
+		return
+	}
+
 	if p.skipRequested {
 		p.skipRequested = false
 	} else {
