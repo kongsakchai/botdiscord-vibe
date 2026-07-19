@@ -27,7 +27,7 @@ func NewStreamSession(audioURL string, vc *discordgo.VoiceConnection, volume flo
 		"-c:a", "libopus",
 		"-b:a", "192k",
 		"-application", "audio",
-		"-compression_level", "10",
+		"-compression_level", "5",
 		"-ar", "48000",
 		"-ac", "2",
 		"-frame_duration", "20",

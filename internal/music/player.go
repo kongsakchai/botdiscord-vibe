@@ -47,7 +47,11 @@ func (p *Player) Play(song *queue.Song, vc *discordgo.VoiceConnection) error {
 	p.paused = false
 	p.skipRequested = false
 
-	return p.startStreamLocked()
+	if err := p.startStreamLocked(); err != nil {
+		return err
+	}
+	go p.prefetchNext()
+	return nil
 }
 
 func (p *Player) Skip() {
@@ -150,12 +154,15 @@ func (p *Player) startStreamLocked() error {
 		return nil
 	}
 
-	audioURL, err := GetAudioURL(p.current.URL)
-	if err != nil {
-		return err
+	if p.current.AudioURL == "" {
+		audioURL, err := GetAudioURL(p.current.URL)
+		if err != nil {
+			return err
+		}
+		p.current.AudioURL = audioURL
 	}
 
-	ss, err := NewStreamSession(audioURL, p.vc, p.volume)
+	ss, err := NewStreamSession(p.current.AudioURL, p.vc, p.volume)
 	if err != nil {
 		return err
 	}
@@ -167,6 +174,17 @@ func (p *Player) startStreamLocked() error {
 	}()
 
 	return nil
+}
+
+func (p *Player) prefetchNext() {
+	next := p.q.Peek()
+	if next == nil || next.AudioURL != "" {
+		return
+	}
+	url, err := GetAudioURL(next.URL)
+	if err == nil {
+		next.AudioURL = url
+	}
 }
 
 func (p *Player) onSongEnd() {
@@ -198,4 +216,5 @@ func (p *Player) onSongEnd() {
 	}
 	p.current = next
 	p.startStreamLocked()
+	go p.prefetchNext()
 }

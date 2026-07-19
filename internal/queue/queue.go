@@ -5,6 +5,7 @@ import "sync"
 type Song struct {
 	Title     string
 	URL       string
+	AudioURL  string
 	Duration  string
 	Requester string
 }
@@ -58,6 +59,15 @@ func (q *Queue) List() []*Song {
 	cp := make([]*Song, len(q.songs))
 	copy(cp, q.songs)
 	return cp
+}
+
+func (q *Queue) Peek() *Song {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+	if len(q.songs) == 0 {
+		return nil
+	}
+	return q.songs[0]
 }
 
 func (q *Queue) Size() int {

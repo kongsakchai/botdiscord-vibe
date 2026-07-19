@@ -17,6 +17,7 @@ func Search(query string, limit int) ([]VideoResult, error) {
 		"--default-search", "ytsearch",
 		"--no-playlist",
 		"--flat-playlist",
+		"--no-warnings",
 		"--print", "%(title)s|||%(id)s|||%(duration)s",
 		fmt.Sprintf("ytsearch%d:%s", limit, query),
 	}
@@ -51,6 +52,7 @@ type VideoInfo struct {
 func GetVideoInfo(url string) (*VideoInfo, error) {
 	args := []string{
 		"--no-playlist",
+		"--no-warnings",
 		"--print", "%(title)s|||%(duration)s|||%(uploader)s",
 		url,
 	}
@@ -78,6 +80,7 @@ func GetAudioURL(videoURL string) (string, error) {
 		"-f", "bestaudio[ext=m4a]/bestaudio",
 		"--get-url",
 		"--no-playlist",
+		"--no-warnings",
 		videoURL,
 	}
 	cmd := exec.Command("yt-dlp", args...)
@@ -102,6 +105,7 @@ func GetPlaylistVideos(url string) ([]VideoResult, error) {
 	args := []string{
 		"--flat-playlist",
 		"--playlist-end", "10",
+		"--no-warnings",
 		"--print", "%(title)s|||%(id)s|||%(duration)s",
 		url,
 	}
