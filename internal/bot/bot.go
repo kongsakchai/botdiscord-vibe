@@ -10,9 +10,9 @@ import (
 )
 
 type Bot struct {
-	session      *discordgo.Session
-	config       *config.Config
-	player       *music.Player
+	session       *discordgo.Session
+	config        *config.Config
+	player        *music.Player
 	disconnecting bool
 }
 
@@ -61,7 +61,7 @@ func (b *Bot) onReady(s *discordgo.Session, r *discordgo.Ready) {
 
 	if len(b.config.GuildIDs) > 0 {
 		for _, gid := range b.config.GuildIDs {
-			b.registerCommandsForGuild(gid)
+			go b.registerCommandsForGuild(gid)
 		}
 	} else {
 		b.registerCommandsGlobally()
